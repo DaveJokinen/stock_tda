@@ -21,17 +21,25 @@ def get_data(tickers, period="max", interval="1d", filename="data.csv", threads=
     data.dropna(inplace = True)
     data.to_csv(filename)
 
-def line_charts(df, title, height=800, width=1280):
+def line_charts(df, title, height=800, width=1280, subplots=True):
     """ Plot line charts of each column in a DataFrame.  Index is x variable """
     rows = df.shape[1]
-    fig = make_subplots(rows=rows, cols=1)
+    if subplots:
+        fig = make_subplots(rows=rows, cols=1)
+    else:
+        fig = go.Figure()
     
     # Add traces
     for i in range(rows):
-        fig.append_trace(
-            go.Scatter(x=df.index, y=df.iloc[:,i], name=df.columns[i]),
-            row=i+1, col=1
-        )
+        if subplots:
+            fig.append_trace(
+                go.Scatter(x=df.index, y=df.iloc[:,i], name=df.columns[i]),
+                row=i+1, col=1
+            )
+        else:
+            fig.add_trace(
+                go.Scatter(x=df.index, y=df.iloc[:,i], name=df.columns[i])
+            )
         
     fig.update_layout(height=height, width=width, title_text=title)
     fig.show()
