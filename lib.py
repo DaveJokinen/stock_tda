@@ -7,8 +7,9 @@ import yfinance as yf
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-# to get frequencies of unevenly-spaced data
+# to get spectrum
 from astropy.timeseries import LombScargle
+from scipy.signal import periodogram, welch
 
 def get_data(tickers, period="max", interval="1d", filename="data.csv", threads=True):
     """ Get data from yahoo finance (TODO: store data persistently in csv or database) """
@@ -96,12 +97,22 @@ def sliding_window(df, w):
     # Now index the ndarray and to create N - w point clouds and return the result
     return data[window_indices]
 
-def low_pass_pgram(s, max_freq):
+def low_pass_pgram(s, max_freq, method='pgram'):
     """
-    Return a tuple of ndarrays representing the Lomb-Scargle periodogram of the data stored in s
+    Return a tuple of ndarrays representing the periodogram of the data stored in s
     for frequencies below max_freq
     """
-    frequency, power = LombScargle(np.arange(s.size), s).autopower(method='cython')
-    indicator = np.where(frequency<max_freq)
+
+    match method:
+        case 'pgram':
+            frequency, power = periodogram(s)
+        case 'welch':
+            frequency, power = welch(s)
+        case 'lombscargle':
+            frequency, power = LombScargle(np.arange(s.size), s).autopower(method='cython')
+        case _:
+            raise ValueError("method must be one of {'pgram', 'welch', 'lombscargle'}")
+            
+    indicator = np.where((frequency > 0) & (frequency < max_freq))
     
     return (frequency[indicator], power[indicator])
